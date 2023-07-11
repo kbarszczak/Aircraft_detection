@@ -1,13 +1,7 @@
 import models as mds
 import argparse
+import time
 import os
-
-
-# import torch.utils.data as data
-# import torch.optim as optim
-# import torch
-# import time
-# import pickle
 
 
 def get_parser():
@@ -16,7 +10,7 @@ def get_parser():
     parser.add_argument("-t", "--target", required=False, type=str, default="training",
                         help="The path where data is stored during the training (such as history etc.)")
     parser.add_argument("-d", "--data", required=False, type=str,
-                        default="D:\\Data\\Aircraft_Detection",
+                        default="D:\\Data\\Aircraft_Detection\\dataset",
                         help="The source path of the dataset")
     parser.add_argument("-dt", "--train", required=False, type=str, default="train.txt",
                         help="The name of file that contains training samples split")
@@ -126,9 +120,13 @@ def train(train_dataloader, valid_dataloader, test_dataloader, vis_batches, batc
 
 def run(parser):
     # verify arguments
-    assert parser.version in ['v5', 'v6', 'v6_1', 'v6_2', 'v6_3', 'v6_4', 'v6_5', 'v6_6t', 'v6_6s', 'v6_7', 'v7',
-                              'v7_1'], f'Version {parser.version} is not currently implemented'
-    assert parser.device in ['gpu', 'cpu'], "Device can only be set to gpu (cuda:0) or cpu"
+    assert parser.version in ['v1'], f'Version {parser.version} is not currently supported'
+    assert parser.target is not "", 'Target path cannot be empty'
+    assert parser.data is not "", 'Data path cannot be empty'
+    assert parser.train is not "", 'Train split filename path cannot be empty'
+    assert parser.evaluate is not "", 'Evaluate split filename path cannot be empty'
+    assert parser.valid is not "", 'Valid split filename path cannot be empty'
+    assert parser.device in ['gpu', 'cpu', 'cuda:0'], "Device can only be set to gpu/cuda:0 (no parallelism supported) or cpu"
     assert parser.name, "Name cannot be empty"
     assert parser.batch_size > 0, "Batch size cannot be negative"
     assert parser.epochs > 0, "Epochs cannot be negative"
@@ -136,48 +134,24 @@ def run(parser):
     assert parser.height > 0, "Height cannot be negative"
 
     # import proper model version
-    if parser.version == "v5":
-        import model_v5.modules as modules
-    elif parser.version == "v6":
-        import model_v6.modules as modules
-    elif parser.version == "v6_1":
-        import model_v6_1.modules as modules
-    elif parser.version == "v6_2":
-        import model_v6_2.modules as modules
-    elif parser.version == "v6_3":
-        import model_v6_3.modules as modules
-    elif parser.version == "v6_4":
-        import model_v6_4.modules as modules
-    elif parser.version == "v6_5":
-        import model_v6_5.modules as modules
-    elif parser.version == "v6_6t":
-        import model_v6_6t.modules as modules
-    elif parser.version == "v6_6s":
-        import model_v6_6s.modules as modules
-    elif parser.version == "v6_7":
-        import model_v6_7.modules as modules
-    elif parser.version == "v7":
-        import model_v7.modules as modules
-    elif parser.version == "v7_1":
-        import model_v7_1.modules as modules
+    if parser.version == "v1":
+        import models.yolo_v1 as modules
 
     # check if dataset exists
     if not os.path.exists(parser.data):
-        raise FileNotFoundError(f"Cannot find the following dir '{parser.data}'")
-    if not os.path.exists(os.path.join(parser.data, 'data')):
-        raise FileNotFoundError(f"Cannot find the following dir '{os.path.join(parser.data, 'data')}'")
-    if not os.path.exists(os.path.join(parser.data, 'vis')):
-        raise FileNotFoundError(f"Cannot find the following dir '{os.path.join(parser.data, 'vis')}'")
+        raise FileNotFoundError(f"Cannot find the following dir: '{parser.data}'")
     if not os.path.exists(os.path.join(parser.data, parser.train)):
-        raise FileNotFoundError(f"Cannot find the following file '{os.path.join(parser.data, parser.train)}'")
+        raise FileNotFoundError(f"Cannot find the following file: '{os.path.join(parser.data, parser.train)}'")
+    if not os.path.exists(os.path.join(parser.data, parser.evaluate)):
+        raise FileNotFoundError(f"Cannot find the following file: '{os.path.join(parser.data, parser.evaluate)}'")
     if not os.path.exists(os.path.join(parser.data, parser.valid)):
-        raise FileNotFoundError(f"Cannot find the following file '{os.path.join(parser.data, parser.valid)}'")
+        raise FileNotFoundError(f"Cannot find the following file: '{os.path.join(parser.data, parser.valid)}'")
 
     # check if destination dir exists
     if not os.path.exists(parser.target):
-        raise FileNotFoundError(f"Cannot find the following dir '{parser.target}'")
+        raise FileNotFoundError(f"Cannot find the following dir: '{parser.target}'")
 
-    target_path = os.path.join(parser.target, f'model_{parser.version}')
+    target_path = os.path.join(parser.target, f'yolo_{parser.version}')
     if not os.path.exists(target_path):
         os.mkdir(target_path)
 
@@ -185,6 +159,9 @@ def run(parser):
     target_path = os.path.join(target_path, str(stamp))
     if not os.path.exists(target_path):
         os.mkdir(target_path)
+
+
+
 
     # prepare the dataloaders
     train_dataloader = data.DataLoader(
@@ -265,14 +242,4 @@ def run(parser):
 
 
 if __name__ == "__main__":
-    p = get_parser()
-
-    # select device
-    if p.device == 'gpu':
-        if not torch.cuda.is_available():
-            raise Exception("Cuda is not available")
-        device = torch.device("cuda:0")
-    else:
-        device = torch.device("cpu")
-
-    run(p)
+    run(get_parser())
