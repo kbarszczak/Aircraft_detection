@@ -1,4 +1,4 @@
-import callbacks as cs
+import detection.components.callbacks.callback as cs
 from abc import abstractmethod
 
 
@@ -25,7 +25,7 @@ class Model:
         pass
 
     @abstractmethod
-    def fit(self, data):
+    def fit(self, train_data, valid_data, epochs):
         pass
 
     @abstractmethod
