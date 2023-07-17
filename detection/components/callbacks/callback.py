@@ -52,8 +52,8 @@ class SaveStateCallback(PerStepCallback):
             return
 
         model = args[0]
-        loss_metrics = args[1]
-        loss_fun = args[2]
+        loss_fun = args[1]
+        loss_metrics = args[3]
         epoch = args[4]
         step = args[5]
         loss = np.mean(loss_metrics[loss_fun.__name__])

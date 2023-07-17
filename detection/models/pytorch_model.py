@@ -7,7 +7,7 @@ import time
 
 
 class PytorchModel(md.Model):
-    def __init__(self, model, loss: str, metrics: list, callbacks: list[cs.Callback], optimizer: torch.optim.Optimizer,
+    def __init__(self, model, loss, metrics: list, callbacks: list[cs.Callback], optimizer: torch.optim.Optimizer,
                  device: torch.device, **kwargs):
         super(PytorchModel, self).__init__(model, loss, metrics, callbacks, **kwargs)
 
@@ -49,17 +49,17 @@ class PytorchModel(md.Model):
             # create empty dict for loss and metrics
             loss_metrics = {self.loss.__name__: []} | {metric.__name__: [] for metric in self.metrics}
 
-            # loop over the training batches
+            # loop over the training data
             self.model.train(True)
             for step, (x, y) in enumerate(train_data):
                 start = time.time()
 
-                # move the data to the proper device & clear gradient & forward pass
+                # move the data to the proper device, clear gradient, and forward pass
                 x, y = x.to(self.device), y.to(self.device)
                 self.model.zero_grad()
                 y_pred = self.model(x)
 
-                # calculate loss & metrics and apply the gradient
+                # calculate loss, metrics and apply the gradient
                 loss_value = self.loss(y, y_pred)
                 loss_value.backward()
                 self.optimizer.step()
@@ -75,7 +75,7 @@ class PytorchModel(md.Model):
 
                 # log the state & serve step callbacks
                 PytorchModel._log_state(start, end, len(train_data), step, loss_metrics)
-                self._serve_callbacks(cs.PerStepCallback, [self.model, loss_metrics, self.loss, self.metrics, epoch, step, len(train_data), start, end])
+                self._serve_callbacks(cs.PerStepCallback, [self.model, self.loss, self.metrics, loss_metrics, epoch, step, len(train_data), len(valid_data)])
 
             # save the training history
             for metric, values in loss_metrics.items():
@@ -84,7 +84,7 @@ class PytorchModel(md.Model):
             # setup dict for validation loss and metrics
             loss_metrics = {self.loss.__name__: []} | {metric.__name__: [] for metric in self.metrics}
 
-            # loop over validating dataset
+            # loop over validating data
             self.model.train(False)
             for step, (x, y) in enumerate(valid_data):
                 start = time.time()
@@ -112,17 +112,12 @@ class PytorchModel(md.Model):
             print()
 
             # serve per epoch callbacks
-            self._serve_callbacks(cs.PerEpochCallback, [history, len(train_data), len(valid_data)])
+            self._serve_callbacks(cs.PerEpochCallback, [self.model, self.loss, self.metrics, history, epoch, len(train_data), len(valid_data)])
 
         # serve per training callbacks
-        self._serve_callbacks(cs.PerTrainingCallback, None)
+        self._serve_callbacks(cs.PerTrainingCallback, [self.model, self.loss, self.metrics, history, len(train_data), len(valid_data)])
 
         return history
-
-    def _serve_callbacks(self, callback_type, args):
-        for callback in self.callbacks:
-            if issubclass(type(callback), callback_type):
-                callback(args)
 
     def evaluate(self, data) -> dict:
         # create empty dict for loss and metrics
@@ -148,16 +143,17 @@ class PytorchModel(md.Model):
             end = time.time()
 
             # log the state
-            time_left = (end - start) * (len(data) - (step + 1))
-            print('\r[%5d/%5d] (eta: %s)' % ((step + 1), len(data), time.strftime('%H:%M:%S', time.gmtime(time_left))),
-                  end='')
-            for metric, value in loss_metrics.items():
-                print(f' {metric}=%.4f' % (value / (step + 1)), end='')
+            PytorchModel._log_state(start, end, len(data), step, loss_metrics)
 
         # restart state printer
         print()
 
         return {metric: (value / len(data)) for metric, value in loss_metrics.items()}
+
+    def _serve_callbacks(self, callback_type, args):
+        for callback in self.callbacks:
+            if issubclass(type(callback), callback_type):
+                callback(args)
 
     @staticmethod
     def _log_state(start, end, size, step, loss_metrics):
