@@ -75,7 +75,7 @@ class PytorchModel(md.Model):
 
                 # log the state & serve step callbacks
                 PytorchModel._log_state(start, end, len(train_data), step, loss_metrics)
-                self._serve_callbacks(cs.PerStepCallback, [step, len(train_data), start, end, loss_metrics])
+                self._serve_callbacks(cs.PerStepCallback, [self.model, loss_metrics, self.loss, self.metrics, epoch, step, len(train_data), start, end])
 
             # save the training history
             for metric, values in loss_metrics.items():
@@ -112,7 +112,7 @@ class PytorchModel(md.Model):
             print()
 
             # serve per epoch callbacks
-            self._serve_callbacks(cs.PerEpochCallback, [history])
+            self._serve_callbacks(cs.PerEpochCallback, [history, len(train_data), len(valid_data)])
 
         # serve per training callbacks
         self._serve_callbacks(cs.PerTrainingCallback, None)
@@ -122,7 +122,7 @@ class PytorchModel(md.Model):
     def _serve_callbacks(self, callback_type, args):
         for callback in self.callbacks:
             if issubclass(type(callback), callback_type):
-                callback(*args if args is not None else None)
+                callback(args)
 
     def evaluate(self, data) -> dict:
         # create empty dict for loss and metrics
