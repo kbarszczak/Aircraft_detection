@@ -211,8 +211,8 @@ class PytorchModel(Model):
         time_left = (end - start) * (size - (step + 1))
         print('\r[%5d/%5d] (eta: %s)' % (
             (step + 1), size, time.strftime('%H:%M:%S', time.gmtime(time_left))), end='')
-        print(f' {loss.name()}=%.4f' % (loss.mean(mode)), end='')
+        print(f' {loss.name()}=%.4f' % loss.mean(mode), end='')
         for metric in metrics:
-            print(f' {metric.name()}=%.4f' % (metric.mean(mode)), end='')
+            print(f' {metric.name()}=%.4f' % metric.mean(mode), end='')
 
 

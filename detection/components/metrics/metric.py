@@ -11,10 +11,10 @@ class Metric:
         super(Metric, self).__init__(**kwargs)
         self.history = []
         self.val_history = []
-        self.name = name
+        self._name = name
 
     def name(self):
-        return self.name
+        return self._name
 
     def mean(self, mode: str = 'train'):
         return np.mean(self._get_history_by_mode(mode))
@@ -47,8 +47,8 @@ class Metric:
 
 
 class PytorchMetric(Metric):
-    def __init__(self, **kwargs):
-        super(PytorchMetric, self).__init__(**kwargs)
+    def __init__(self, name: str, **kwargs):
+        super(PytorchMetric, self).__init__(name, **kwargs)
 
     def append(self, value: torch.Tensor, mode: str = 'train'):
         self._get_history_by_mode(mode).append(value.item())
@@ -58,9 +58,9 @@ class PytorchMetric(Metric):
         pass
 
 
-class PytorchYoloV1Loss(Metric):
-    def __init__(self, cell_count=5, cell_boxes=1, classes=43, **kwargs):
-        super(PytorchYoloV1Loss, self).__init__(**kwargs)
+class PytorchYoloV1Loss(PytorchMetric):
+    def __init__(self, name: str, cell_count=5, cell_boxes=2, classes=43, **kwargs):
+        super(PytorchYoloV1Loss, self).__init__(name, **kwargs)
 
         assert cell_boxes == 2, f"Cell boxes for value {cell_boxes} is not implemented"
 
@@ -73,8 +73,8 @@ class PytorchYoloV1Loss(Metric):
 
     @abstractmethod
     def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor):
-        ious = [utils.intersection_over_union(y_true[..., self.classes + 1 + b * 5:self.classes + (b + 1) * 5],
-                                              y_pred[..., self.classes + 1:self.classes + 5]) for b in
+        ious = [utils.intersection_over_union(y_true[..., self.classes + 1:self.classes + 5],
+                                              y_pred[..., self.classes + 1 + b * 5:self.classes + (b + 1) * 5]) for b in
                 range(self.cell_boxes)]
         ious = torch.cat([iou.unsqueeze(0) for iou in ious], dim=0)
 

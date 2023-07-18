@@ -7,10 +7,10 @@ import os
 def get_parser():
     parser = argparse.ArgumentParser(description='Training FBNet model')
     parser.add_argument("-ver", "--version", required=True, type=str, help="The version of YOLO used")
-    parser.add_argument("-t", "--target", required=False, type=str, default="training",
+    parser.add_argument("-t", "--target", required=False, type=str, default="D:\\OneDrive - Akademia Górniczo-Hutnicza im. Stanisława Staszica w Krakowie\\Programming\\Labs\Aircraft_detection\\training",
                         help="The path where data is stored during the training (such as history etc.)")
     parser.add_argument("-d", "--data", required=False, type=str,
-                        default="D:\\Data\\Aircraft_Detection\\dataset",
+                        default="D:\\Data\\Aircraft_Detection",
                         help="The source path of the dataset")
     parser.add_argument("-dt", "--train", required=False, type=str, default="train.txt",
                         help="The name of file that contains training samples split")
@@ -18,12 +18,12 @@ def get_parser():
                         help="The name of file that contains testing samples split")
     parser.add_argument("-dv", "--valid", required=False, type=str, default="valid.txt",
                         help="The name of file that contains validating samples split")
-    parser.add_argument("-dev", "--device", required=False, type=str, default="gpu",
-                        help="The device used during the training (cpu or gpu)")
-    parser.add_argument("-b", "--batch_size", required=False, type=int, default=2, help="The batch size")
+    parser.add_argument("-dev", "--device", required=False, type=str, default="cuda",
+                        help="The device used during the training (cpu or cuda)")
+    parser.add_argument("-b", "--batch_size", required=False, type=int, default=8, help="The batch size")
     parser.add_argument("-e", "--epochs", required=False, type=int, default=10, help="The epochs count")
-    parser.add_argument("-iw", "--width", required=False, type=int, default=256, help="The input image width")
-    parser.add_argument("-ih", "--height", required=False, type=int, default=144, help="The input image height")
+    parser.add_argument("-iw", "--width", required=False, type=int, default=160, help="The input image width")
+    parser.add_argument("-ih", "--height", required=False, type=int, default=160, help="The input image height")
 
     return parser.parse_args()
 
@@ -31,14 +31,12 @@ def get_parser():
 def run(parser):
     # verify arguments
     assert parser.version in ['v1'], f'Version {parser.version} is not currently supported'
-    assert parser.target is not "", 'Target path cannot be empty'
-    assert parser.data is not "", 'Data path cannot be empty'
-    assert parser.train is not "", 'Train split filename path cannot be empty'
-    assert parser.evaluate is not "", 'Evaluate split filename path cannot be empty'
-    assert parser.valid is not "", 'Valid split filename path cannot be empty'
-    assert parser.device in ['gpu', 'cpu',
-                             'cuda:0'], "Device can only be set to gpu/cuda:0 (no parallelism supported) or cpu"
-    assert parser.name, "Name cannot be empty"
+    assert parser.target != "", 'Target path cannot be empty'
+    assert parser.data != "", 'Data path cannot be empty'
+    assert parser.train != "", 'Train split filename path cannot be empty'
+    assert parser.evaluate != "", 'Evaluate split filename path cannot be empty'
+    assert parser.valid != "", 'Valid split filename path cannot be empty'
+    assert parser.device in ['cpu', 'cuda'], "Device can only be set to gpu/cuda:0 (no parallelism supported) or cpu"
     assert parser.batch_size > 0, "Batch size cannot be negative"
     assert parser.epochs > 0, "Epochs cannot be negative"
     assert parser.width > 0, "Width cannot be negative"

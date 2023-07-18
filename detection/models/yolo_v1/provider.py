@@ -12,15 +12,15 @@ class YoloProvider(provider.Provider):
         super(YoloProvider, self).__init__(**kwargs)
 
     def get_model(self, device: str, target_path: str) -> type(m.Model):
-        if device == 'gpu' or device == 'cuda:0' or device == 'cpu':
+        if device == 'cuda' or device == 'cpu':
             device = torch.device(device)
         else:
-            raise ValueError(f"Unsupported device type '{device}' was passed. Supported: [cpu, gpu, cuda:0]")
+            raise ValueError(f"Unsupported device type '{device}' was passed. Supported: [cpu, cuda]")
 
-        model = yolo.YoloModel()
+        model = yolo.YoloModel().to(device)
         pytorch_model = m.PytorchModel(
             model=model,
-            loss=metric.PytorchYoloV1Loss(),
+            loss=metric.PytorchYoloV1Loss("loss"),
             metrics=[],
             callbacks=[],
             optimizer=torch.optim.NAdam(model.parameters(), lr=1e-4),
@@ -42,8 +42,8 @@ class YoloProvider(provider.Provider):
             shuffle=True,
             batch_size=batch_size,
             drop_last=True,
-            prefetch_factor=10,
-            num_workers=2
+            prefetch_factor=50,
+            num_workers=3
         )
 
         test = torch.utils.data.DataLoader(
@@ -57,8 +57,8 @@ class YoloProvider(provider.Provider):
             shuffle=False,
             batch_size=batch_size,
             drop_last=True,
-            prefetch_factor=10,
-            num_workers=2
+            prefetch_factor=50,
+            num_workers=3
         )
 
         valid = torch.utils.data.DataLoader(
@@ -72,8 +72,8 @@ class YoloProvider(provider.Provider):
             shuffle=False,
             batch_size=batch_size,
             drop_last=True,
-            prefetch_factor=10,
-            num_workers=2
+            prefetch_factor=50,
+            num_workers=3
         )
 
         return train, test, valid
