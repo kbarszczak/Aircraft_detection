@@ -7,18 +7,38 @@ import detection.utils.pytorch_utils as utils
 
 
 class Metric:
-    def __init__(self, **kwargs):
+    def __init__(self, name, **kwargs):
         super(Metric, self).__init__(**kwargs)
         self.history = []
+        self.val_history = []
+        self.name = name
 
-    def mean(self):
-        return np.mean(self.history)
+    def name(self):
+        return self.name
 
-    def numpy(self):
-        return np.array(self.history)
+    def mean(self, mode: str = 'train'):
+        return np.mean(self._get_history_by_mode(mode))
+
+    def numpy(self, mode: str = 'train'):
+        return np.array(self._get_history_by_mode(mode))
+
+    def list(self, mode: str = 'train'):
+        return self._get_history_by_mode(mode).copy()
+
+    def clear(self):
+        self.history.clear()
+        self.val_history.clear()
+
+    def _get_history_by_mode(self, mode: str):
+        if mode == "train":
+            return self.history
+        elif mode == "valid":
+            return self.val_history
+        else:
+            raise ValueError(f"Unknown mode was passed {mode}. Valid options: [train, valid]")
 
     @abstractmethod
-    def append(self, value: float):
+    def append(self, value: float, mode: str = 'train'):
         pass
 
     @abstractmethod
@@ -30,8 +50,8 @@ class PytorchMetric(Metric):
     def __init__(self, **kwargs):
         super(PytorchMetric, self).__init__(**kwargs)
 
-    def append(self, value: torch.Tensor):
-        self.history.append(value.item())
+    def append(self, value: torch.Tensor, mode: str = 'train'):
+        self._get_history_by_mode(mode).append(value.item())
 
     @abstractmethod
     def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor):
@@ -53,7 +73,9 @@ class PytorchYoloV1Loss(Metric):
 
     @abstractmethod
     def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor):
-        ious = [utils.intersection_over_union(y_true[..., self.classes + 1 + b * 5:self.classes + (b + 1) * 5],  y_pred[..., self.classes + 1:self.classes + 5]) for b in range(self.cell_boxes)]
+        ious = [utils.intersection_over_union(y_true[..., self.classes + 1 + b * 5:self.classes + (b + 1) * 5],
+                                              y_pred[..., self.classes + 1:self.classes + 5]) for b in
+                range(self.cell_boxes)]
         ious = torch.cat([iou.unsqueeze(0) for iou in ious], dim=0)
 
         iou_max_val, best_bbox = torch.max(ious, dim=0)
@@ -66,7 +88,7 @@ class PytorchYoloV1Loss(Metric):
         )
 
         box_pred[..., 2:4] = torch.sign(box_pred[..., 2:4]) * (torch.sqrt(torch.abs(box_pred[..., 2:4] + 1e-6)))
-        box_target = actual_box * y_true[..., self.classes+1:self.classes+5]
+        box_target = actual_box * y_true[..., self.classes + 1:self.classes + 5]
         box_target[..., 2:4] = torch.sqrt(box_target[..., 2:4])
 
         box_coord_loss = self.mse(
@@ -75,22 +97,23 @@ class PytorchYoloV1Loss(Metric):
         )
 
         # object loss
-        pred_box = (best_bbox * y_pred[..., self.classes+5:self.classes+6] + (1 - best_bbox) * y_pred[..., self.classes:self.classes+1])
+        pred_box = (best_bbox * y_pred[..., self.classes + 5:self.classes + 6] + (1 - best_bbox) * y_pred[...,
+                                                                                                   self.classes:self.classes + 1])
 
         obj_loss = self.mse(
             torch.flatten(actual_box * pred_box),
-            torch.flatten(actual_box * y_true[..., self.classes:self.classes+1])
+            torch.flatten(actual_box * y_true[..., self.classes:self.classes + 1])
         )
 
         # no object loss
         no_obj_loss = self.mse(
-            torch.flatten((1 - actual_box) * y_pred[..., self.classes:self.classes+1], start_dim=1),
-            torch.flatten((1 - actual_box) * y_true[..., self.classes:self.classes+1], start_dim=1)
+            torch.flatten((1 - actual_box) * y_pred[..., self.classes:self.classes + 1], start_dim=1),
+            torch.flatten((1 - actual_box) * y_true[..., self.classes:self.classes + 1], start_dim=1)
         )
 
         no_obj_loss += self.mse(
-            torch.flatten((1 - actual_box) * y_pred[..., self.classes+5:self.classes+6], start_dim=1),
-            torch.flatten((1 - actual_box) * y_true[..., self.classes:self.classes+1], start_dim=1)
+            torch.flatten((1 - actual_box) * y_pred[..., self.classes + 5:self.classes + 6], start_dim=1),
+            torch.flatten((1 - actual_box) * y_true[..., self.classes:self.classes + 1], start_dim=1)
         )
 
         # class loss
