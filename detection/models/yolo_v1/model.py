@@ -5,10 +5,10 @@ import detection.components.modules.cnn_block as cb
 import detection.components.modules.linear_block as lb
 
 
-class YoloModule(nn.Module):
+class YoloModel(nn.Module):
     def __init__(self, filters: tuple[int, int, int, int, int] = (32, 64, 128, 256, 512), cell_count=5, cell_boxes=2,
                  classes=43, **kwargs):
-        super(YoloModule, self).__init__(**kwargs)
+        super(YoloModel, self).__init__(**kwargs)
 
         assert len(filters) == 5, 'There should be 5 cnn blocks. Please provide filters list of length 5'
         assert cell_boxes == 2, f'Cell boxes is not implemented for value {cell_boxes}'

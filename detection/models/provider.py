@@ -7,7 +7,7 @@ class Provider:
         super(Provider, self).__init__(**kwargs)
 
     @abstractmethod
-    def get_model(self, device: str, target_path: str) -> model.Model:
+    def get_model(self, device: str, target_path: str) -> type(model.Model):
         pass
 
     @abstractmethod

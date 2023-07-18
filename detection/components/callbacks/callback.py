@@ -52,11 +52,10 @@ class SaveStateCallback(PerStepCallback):
             return
 
         model = args[0]
-        loss_fun = args[1]
-        loss_metrics = args[3]
-        epoch = args[4]
-        step = args[5]
-        loss = np.mean(loss_metrics[loss_fun.__name__])
+        loss_fn = args[1]
+        epoch = args[3]
+        step = args[4]
+        loss = loss_fn.mean('train')
 
         if self.best_loss is None or self.best_loss > loss:
             filename = os.path.join(self.target_path, f'yolo_l={loss}_e={epoch + 1}_s={step + 1}.pt')

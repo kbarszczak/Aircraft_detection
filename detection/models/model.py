@@ -8,7 +8,7 @@ import time
 
 
 class Model:
-    def __init__(self, model, loss: m.Metric, metrics: list[m.Metric], callbacks: list[cs.Callback], **kwargs):
+    def __init__(self, model, loss: type(m.Metric), metrics: list[type(m.Metric)], callbacks: list[type(cs.Callback)], **kwargs):
         super(Model, self).__init__(**kwargs)
 
         assert model is not None, "Model has to be present"
@@ -39,7 +39,7 @@ class Model:
 
 
 class PytorchModel(Model):
-    def __init__(self, model: torch.nn.Module, loss: m.PytorchMetric, metrics: list[m.PytorchMetric], callbacks: list[cs.Callback], optimizer: torch.optim.Optimizer,
+    def __init__(self, model: torch.nn.Module, loss: type(m.PytorchMetric), metrics: list[type(m.PytorchMetric)], callbacks: list[type(cs.Callback)], optimizer: torch.optim.Optimizer,
                  device: torch.device, **kwargs):
         super(PytorchModel, self).__init__(model, loss, metrics, callbacks, **kwargs)
 
@@ -115,7 +115,7 @@ class PytorchModel(Model):
                 PytorchModel._log_state(start, end, len(train_data), step, self.loss, self.metrics, 'train')
 
                 # serve step callbacks
-                self._serve_callbacks(cs.PerStepCallback, [self.model, self.loss, self.metrics, epoch, step, len(train_data), len(valid_data)])
+                self._serve_callbacks(cs.PerStepCallback, (self.model, self.loss, self.metrics, epoch, step, len(train_data), len(valid_data)))
 
             # loop over the validating data
             self.model.train(False)
@@ -155,10 +155,10 @@ class PytorchModel(Model):
             print()
 
             # serve per epoch callbacks
-            self._serve_callbacks(cs.PerEpochCallback, [self.model, self.loss, self.metrics, history, epoch, len(train_data), len(valid_data)])
+            self._serve_callbacks(cs.PerEpochCallback, (self.model, self.loss, self.metrics, history, epoch, len(train_data), len(valid_data)))
 
         # serve per training callbacks
-        self._serve_callbacks(cs.PerTrainingCallback, [self.model, self.loss, self.metrics, history, len(train_data), len(valid_data)])
+        self._serve_callbacks(cs.PerTrainingCallback, (self.model, self.loss, self.metrics, history, len(train_data), len(valid_data)))
 
         return history
 

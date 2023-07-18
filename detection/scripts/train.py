@@ -46,7 +46,7 @@ def run(parser):
 
     # import proper model version
     if parser.version == "v1":
-        import detection.providers.yolo_v1.yolo_provider as yolo_provider
+        import detection.models.yolo_v1.provider as p
     else:
         raise NotImplementedError(f"Model {parser.version} is not implemented")
 
@@ -74,7 +74,7 @@ def run(parser):
         os.mkdir(target_path)
 
     # get provider and instantiate objects needed for training
-    provider = yolo_provider.YoloProvider()
+    provider = p.YoloProvider()
     model = provider.get_model(
         device=parser.device,
         target_path=target_path
@@ -93,7 +93,12 @@ def run(parser):
     model.fit(train_data, valid_data, parser.epochs)
 
     # launch evaluation
-    model.evaluate(test_data)
+    score = model.evaluate(test_data)
+
+    # print evaluation score
+    print("Training score")
+    for name, value in score.items():
+        print(f'{name}: %.4f' % value)
 
 
 if __name__ == "__main__":
