@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-import detection.utils.utils as utils
+import detection.utils.pytorch_utils as utils
 
 
 class Metric:

@@ -11,6 +11,7 @@ class YoloModule(nn.Module):
         super(YoloModule, self).__init__(**kwargs)
 
         assert len(filters) == 5, 'There should be 5 cnn blocks. Please provide filters list of length 5'
+        assert cell_boxes == 2, f'Cell boxes is not implemented for value {cell_boxes}'
 
         self.cell_count = cell_count
         self.cell_boxes = cell_boxes

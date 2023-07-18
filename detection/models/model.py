@@ -1,7 +1,7 @@
 import detection.components.callbacks.callback as cs
 from abc import abstractmethod
 
-import detection.components.metrics.metric as metric
+import detection.components.metrics.metric as m
 
 import numpy as np
 import torch
@@ -9,7 +9,7 @@ import time
 
 
 class Model:
-    def __init__(self, model, loss: metric.Metric, metrics: list[metric.Metric], callbacks: list[cs.Callback], **kwargs):
+    def __init__(self, model, loss: m.Metric, metrics: list[m.Metric], callbacks: list[cs.Callback], **kwargs):
         super(Model, self).__init__(**kwargs)
 
         assert model is not None, "Model has to be present"
@@ -40,7 +40,7 @@ class Model:
 
 
 class PytorchModel(Model):
-    def __init__(self, model, loss: metric.PytorchMetric, metrics: list[metric.PytorchMetric], callbacks: list[cs.Callback], optimizer: torch.optim.Optimizer,
+    def __init__(self, model: torch.nn.Module, loss: m.PytorchMetric, metrics: list[m.PytorchMetric], callbacks: list[cs.Callback], optimizer: torch.optim.Optimizer,
                  device: torch.device, **kwargs):
         super(PytorchModel, self).__init__(model, loss, metrics, callbacks, **kwargs)
 
