@@ -1,13 +1,14 @@
+import torch
 import torch.nn as nn
 
 import detection.components.modules.cnn_block as cb
 import detection.components.modules.linear_block as lb
 
 
-class YoloModel(nn.Module):
-    def __init__(self, filters: tuple[int, int, int, int, int] = (32, 64, 128, 256, 512), cell_count=5, cell_boxes=1,
+class YoloModule(nn.Module):
+    def __init__(self, filters: tuple[int, int, int, int, int] = (32, 64, 128, 256, 512), cell_count=5, cell_boxes=2,
                  classes=43, **kwargs):
-        super(YoloModel, self).__init__(**kwargs)
+        super(YoloModule, self).__init__(**kwargs)
 
         assert len(filters) == 5, 'There should be 5 cnn blocks. Please provide filters list of length 5'
 
@@ -39,4 +40,5 @@ class YoloModel(nn.Module):
         x = self.pool_5(self.cnn_5(x))
         x = self.flatten(x)
         x = self.lin_1(x)
-        return self.lin_2(x)
+        x = self.lin_2(x)
+        return torch.reshape(x, (-1, self.cell_count, self.cell_count, self.classes + self.cell_boxes*5))
