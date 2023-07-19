@@ -112,10 +112,13 @@ class PytorchModel(Model):
                 end = time.time()
 
                 # log the state
-                PytorchModel._log_state(start, end, len(train_data), step, self.loss, self.metrics, 'train')
+                PytorchModel._log_state(start, end, len(train_data), step, self.loss, self.metrics, 'train', 'training')
 
                 # serve step callbacks
                 self._serve_callbacks(cs.PerStepCallback, (self.model, self.loss, self.metrics, epoch, step, len(train_data), len(valid_data)))
+
+            # restart state printer
+            print()
 
             # loop over the validating data
             self.model.train(False)
@@ -139,14 +142,14 @@ class PytorchModel(Model):
                 end = time.time()
 
                 # log the state
-                PytorchModel._log_state(start, end, len(valid_data), step, self.loss, self.metrics, 'valid')
+                PytorchModel._log_state(start, end, len(valid_data), step, self.loss, self.metrics, 'valid', 'validation')
 
             # save the history
-            history[self.loss.name()].extend(self.loss.list("train"))
-            history[f'val_{self.loss.name()}'].extend(self.loss.list("valid"))
+            history[self.loss.name()].append(self.loss.mean("train"))
+            history[f'val_{self.loss.name()}'].append(self.loss.mean("valid"))
             for metric in self.metrics:
-                history[metric.name()].extend(metric.list("train"))
-                history[f'val_{metric.name()}'].extend(metric.list("valid"))
+                history[metric.name()].append(metric.mean("train"))
+                history[f'val_{metric.name()}'].append(metric.mean("valid"))
 
             # restart the metrics
             self._restart_metrics()
@@ -188,7 +191,7 @@ class PytorchModel(Model):
             end = time.time()
 
             # log the state
-            PytorchModel._log_state(start, end, len(data), step, self.loss, self.metrics, 'train')
+            PytorchModel._log_state(start, end, len(data), step, self.loss, self.metrics, 'train', 'testing')
 
         # restart state printer
         print()
@@ -207,12 +210,10 @@ class PytorchModel(Model):
             metric.clear()
 
     @staticmethod
-    def _log_state(start, end, size, step, loss, metrics, mode='train'):
+    def _log_state(start, end, size, step, loss, metrics, mode='train', prefix="training"):
         time_left = (end - start) * (size - (step + 1))
-        print('\r[%5d/%5d] (eta: %s)' % (
+        print(f'\r({prefix}) [%5d/%5d] (eta: %s)' % (
             (step + 1), size, time.strftime('%H:%M:%S', time.gmtime(time_left))), end='')
         print(f' {loss.name()}=%.4f' % loss.mean(mode), end='')
         for metric in metrics:
             print(f' {metric.name()}=%.4f' % metric.mean(mode), end='')
-
-

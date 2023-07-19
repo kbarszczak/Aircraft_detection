@@ -7,7 +7,7 @@ import os
 def get_parser():
     parser = argparse.ArgumentParser(description='Training FBNet model')
     parser.add_argument("-ver", "--version", required=True, type=str, help="The version of YOLO used")
-    parser.add_argument("-t", "--target", required=False, type=str, default="D:\\OneDrive - Akademia Górniczo-Hutnicza im. Stanisława Staszica w Krakowie\\Programming\\Labs\Aircraft_detection\\training",
+    parser.add_argument("-t", "--target", required=False, type=str, default=".\\training",
                         help="The path where data is stored during the training (such as history etc.)")
     parser.add_argument("-d", "--data", required=False, type=str,
                         default="D:\\Data\\Aircraft_Detection",
@@ -75,7 +75,8 @@ def run(parser):
     provider = p.YoloProvider()
     model = provider.get_model(
         device=parser.device,
-        target_path=target_path
+        target_path=target_path,
+        input_shape=(parser.height, parser.width, 3)
     )
     train_data, test_data, valid_data = provider.get_data(
         data_path=parser.data,
@@ -83,8 +84,7 @@ def run(parser):
         test_file=parser.evaluate,
         valid_file=parser.valid,
         batch_size=parser.batch_size,
-        width=parser.width,
-        height=parser.height
+        input_shape=(parser.height, parser.width, 3)
     )
 
     # launch training
@@ -94,7 +94,7 @@ def run(parser):
     score = model.evaluate(test_data)
 
     # print evaluation score
-    print("Training score")
+    print("Test score:")
     for name, value in score.items():
         print(f'{name}: %.4f' % value)
 

@@ -59,7 +59,7 @@ class PytorchMetric(Metric):
 
 
 class PytorchYoloV1Loss(PytorchMetric):
-    def __init__(self, name: str, cell_count=5, cell_boxes=2, classes=43, **kwargs):
+    def __init__(self, name: str = 'loss', cell_count=5, cell_boxes=2, classes=43, **kwargs):
         super(PytorchYoloV1Loss, self).__init__(name, **kwargs)
 
         assert cell_boxes == 2, f"Cell boxes for value {cell_boxes} is not implemented"
@@ -123,3 +123,23 @@ class PytorchYoloV1Loss(PytorchMetric):
         )
 
         return self.lambda_coord * box_coord_loss + obj_loss + self.lambda_noobj * no_obj_loss + class_loss
+
+
+class PytorchMseMetric(PytorchMetric):
+    def __init__(self, name: str = 'mse', **kwargs):
+        super(PytorchMseMetric, self).__init__(name, **kwargs)
+        self.mse = nn.MSELoss()
+
+    @abstractmethod
+    def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor):
+        return self.mse(y_true, y_pred)
+
+
+class PytorchMaeMetric(PytorchMetric):
+    def __init__(self, name: str = 'mae', **kwargs):
+        super(PytorchMaeMetric, self).__init__(name, **kwargs)
+        self.mae = nn.L1Loss()
+
+    @abstractmethod
+    def __call__(self, y_true: torch.Tensor, y_pred: torch.Tensor):
+        return self.mae(y_true, y_pred)

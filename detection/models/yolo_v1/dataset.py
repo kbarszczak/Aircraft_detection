@@ -2,7 +2,6 @@ import torch
 import numpy as np
 import pandas as pd
 import os
-import cv2
 
 
 class YoloDataset(torch.utils.data.Dataset):
@@ -26,7 +25,7 @@ class YoloDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, idx):
         filename = str(self.ids.iloc[idx, 0])
-        image_filename = f'{filename}.jpg'
+        image_filename = f'{filename}.bin'
         image_b_boxes = f'{filename}.csv'
 
         image = self._load_process_image(os.path.join(self.path, image_filename))
@@ -35,32 +34,15 @@ class YoloDataset(torch.utils.data.Dataset):
         return image, b_boxes
 
     def _load_process_image(self, path):
-        img = cv2.cvtColor(cv2.imread(path), cv2.COLOR_BGR2RGB)
-        img = cv2.resize(img, (self.shape[1], self.shape[0]), interpolation=cv2.INTER_LINEAR)
-        return torch.from_numpy(np.transpose((img / 255.0).astype('float32'), (2, 0, 1)))
+        with open(path, 'rb') as bf:
+            return torch.from_numpy(np.reshape(np.frombuffer(bf.read(), dtype='float32'), (self.shape[2], self.shape[0], self.shape[1])).copy())
 
     def _load_process_b_boxes(self, path):
         boxes = torch.zeros((self.cell_count, self.cell_count, (self.cell_boxes * 5 + self.classes)),
                             dtype=torch.float32)
         for _, row in pd.read_csv(path).iterrows():
-            class_index = self.labels.loc[self.labels['classes'] == row['class'], 'indices'].values[0]
-
-            width, height, xmin, xmax, ymin, ymax = row['width'], row['height'], row['xmin'], row['xmax'], row['ymin'], \
-                                                    row['ymax']
-
-            width_coef = width / self.shape[1]
-            height_coef = height / self.shape[0]
-
-            xmin /= width_coef
-            xmax /= width_coef
-
-            ymin /= height_coef
-            ymax /= height_coef
-
-            xcenter = ((xmin + xmax) / 2.0) / self.shape[1]
-            ycenter = ((ymin + ymax) / 2.0) / self.shape[0]
-            width = (xmax - xmin) / self.shape[1]
-            height = (ymax - ymin) / self.shape[0]
+            class_index = row['class_index']
+            width, height, xcenter, ycenter = row['width'], row['height'], row['xcenter'], row['ycenter']
 
             x, y = int(xcenter * self.cell_count), int(ycenter * self.cell_count)
             xcell, ycell = xcenter * self.cell_count - x, ycenter * self.cell_count - y
