@@ -11,6 +11,6 @@ class Provider:
         pass
 
     @abstractmethod
-    def get_data(self, data_path: str, train_file: str, test_file: str, valid_file: str, batch_size: int,
+    def get_data(self, data_path: str, train_file: str, test_file: str | None, valid_file: str | None, batch_size: int,
                  input_shape: tuple) -> (object, object, object):
         pass

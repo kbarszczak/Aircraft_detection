@@ -3,6 +3,7 @@ from abc import abstractmethod
 
 import detection.components.metrics.metric as m
 
+import numpy as np
 import torch
 import time
 
@@ -26,15 +27,15 @@ class Model:
         self.callbacks = callbacks
 
     @abstractmethod
-    def predict(self, data):
+    def predict(self, data) -> tuple[np.ndarray, np.ndarray]:
         pass
 
     @abstractmethod
-    def fit(self, train_data, valid_data, epochs):
+    def fit(self, train_data, valid_data, epochs) -> dict:
         pass
 
     @abstractmethod
-    def evaluate(self, data):
+    def evaluate(self, data) -> dict:
         pass
 
 
@@ -49,8 +50,9 @@ class PytorchModel(Model):
         self.optimizer = optimizer
         self.device = device
 
-    def predict(self, data) -> torch.tensor:
-        result = []
+    def predict(self, data) -> tuple[np.ndarray, np.ndarray]:
+        detections = []
+        batches = []
         self.model.train(False)
 
         # loop over batches
@@ -62,11 +64,12 @@ class PytorchModel(Model):
             with torch.no_grad():
                 y = self.model(x)
 
-            # remember the result
-            result.append(y)
+            # remember the result and the input batches
+            detections.append(y.cpu().numpy())
+            batches.append(x.cpu().numpy())
 
-        # return the tensor
-        return torch.tensor(result)
+        # return the tensors
+        return np.array(batches), np.array(detections)
 
     def fit(self, train_data, valid_data, epochs) -> dict:
         # set up the metrics
