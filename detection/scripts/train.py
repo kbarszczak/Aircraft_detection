@@ -4,6 +4,11 @@ import time
 import os
 
 
+"""
+Sample command: python -m detection.scripts.train -ver v1 -b 32 -e 1 -pp 'D:/OneDrive - Akademia Górniczo-Hutnicza im. Stanisława Staszica w Krakowie/Programming\Labs/Aircraft_detection/training/yolo_v1/1689931748/yolo_v1.pt'
+"""
+
+
 def get_parser():
     parser = argparse.ArgumentParser(description='Training model')
     parser.add_argument("-ver", "--version", required=True, type=str, help="The version of YOLO used")

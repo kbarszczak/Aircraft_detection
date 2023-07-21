@@ -3,8 +3,14 @@ import argparse
 import time
 import os
 import cv2
+from tqdm import tqdm
 
 import numpy as np
+
+
+"""
+Sample command: python -m detection.scripts.env -ver v1 -mp 'D:/OneDrive - Akademia Górniczo-Hutnicza im. Stanisława Staszica w Krakowie/Programming/Labs/Aircraft_detection/training/yolo_v1/1689931748/yolo_v1.pt' -s 'D:/Data/Aircraft_Detection' -lm dataset -sf valid.txt
+"""
 
 
 def get_parser():
@@ -30,35 +36,35 @@ def get_parser():
 
 def process_single_sample(image: np.ndarray, detection: np.ndarray, shape: tuple[int, int, int], target: str,
                           index: int, classes=43, cell_count=5, threshold=0.5):
-    image = (np.transpose(image, (1, 2, 0)) * 255).astype('uint8')
+    image = cv2.cvtColor((np.transpose(image, (1, 2, 0)) * 255).astype('uint8'), cv2.COLOR_RGB2BGR)
     for row in range(len(detection)):
         for column in range(len(detection[row])):
             cell = detection[row, column]
-            for box_index in range(classes, len(cell), 5):
-                box = cell[box_index:box_index + 5]
-                if box[0] > threshold:
-                    class_index = int(np.argmax(cell[:classes]))
-                    xcell, ycell, widthcell, heightcell = box[1], box[2], box[3], box[4]
+            boxes = [cell[box_index:box_index + 5] for box_index in range(classes, len(cell), 5)]
+            boxes.sort(key=lambda v: v[0], reverse=True)
+            box = boxes[0]
+            if box[0] > threshold:
+                class_index = int(np.argmax(cell[:classes]))
+                xcell, ycell, widthcell, heightcell = box[1], box[2], box[3], box[4]
 
-                    x = (xcell + column) / cell_count
-                    y = (ycell + row) / cell_count
-                    width, height = widthcell / cell_count, heightcell / cell_count
+                x = (xcell + column) / cell_count
+                y = (ycell + row) / cell_count
+                width, height = widthcell / cell_count, heightcell / cell_count
 
-                    x, y, width, height = x * shape[1], y * shape[0], width * shape[1], height * shape[0]
+                x, y, width, height = x * shape[1], y * shape[0], width * shape[1], height * shape[0]
 
-                    image = cv2.rectangle(image, (int(x - width / 2), int(y - height / 2)),
-                                          (int(x + width / 2), int(y + height / 2)), (255, 0, 0), -1)
-                    image = cv2.putText(image, str(class_index), (int(x - width / 2), int(y - height / 2 - 10)),
-                                        cv2.FONT_HERSHEY_SIMPLEX, (255, 0, 0), -1, cv2.LINE_AA)
+                image = cv2.rectangle(image, (int(x - width / 2), int(y - height / 2)),
+                                      (int(x + width / 2), int(y + height / 2)), (255, 0, 0), 1)
+                image = cv2.putText(image, str(class_index), (int(x - width / 2), int(y - height / 2 - 10)),
+                                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 1, cv2.LINE_AA)
 
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        cv2.imwrite(os.path.join(target, f'{index}.png'), image)
+    cv2.imwrite(os.path.join(target, f'{index}.png'), image)
 
 
 def dataset_mode(model, data, target: str, shape: tuple[int, int, int]):
     batches, detections = model.predict(data)
     index = 0
-    for batch, batch_detection in zip(batches, detections):
+    for batch, batch_detection in tqdm(zip(batches, detections), total=len(data)):
         for image, detection in zip(batch, batch_detection):
             process_single_sample(image, detection, shape, target, index)
             index += 1
@@ -107,6 +113,12 @@ def run(parser):
     if not os.path.exists(target_path):
         os.mkdir(target_path)
 
+    # log training details
+    print("Detection details:")
+    print(f'Loading data from: "{parser.source}" in mode: {parser.load_mode}')
+    print(f'Saving files to: "{target_path}"')
+    print(f'Device: {parser.device}')
+
     # get provider and instantiate objects needed for detection
     provider = p.YoloProvider()
     model = provider.get_model(
@@ -138,6 +150,8 @@ def run(parser):
             target=target_path,
             batch_size=parser.batch_size
         )
+
+    print(f"Detection finished")
 
 
 if __name__ == "__main__":
