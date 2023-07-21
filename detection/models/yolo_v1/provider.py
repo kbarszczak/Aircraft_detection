@@ -42,7 +42,7 @@ class YoloProvider(provider.Provider):
                 callback.SaveHistoryPlotsCallback(
                     target_path=target_path,
                     configs=(
-                        ("history.png", None, False, None)
+                        ("history.png", None, False, None),
                     )
                 ),
                 callback.VisualizePytorchCNNLayersCallback(

@@ -30,11 +30,15 @@ class Model:
         pass
 
     @abstractmethod
-    def fit(self, train_data, valid_data, epochs):
+    def fit(self, train_data, valid_data, epochs: int) -> dict:
         pass
 
     @abstractmethod
-    def evaluate(self, data):
+    def evaluate(self, data) -> dict:
+        pass
+
+    @abstractmethod
+    def load(self, path: str):
         pass
 
 
@@ -68,7 +72,7 @@ class PytorchModel(Model):
         # return the tensor
         return torch.tensor(result)
 
-    def fit(self, train_data, valid_data, epochs) -> dict:
+    def fit(self, train_data, valid_data, epochs: int) -> dict:
         # set up the metrics
         self._restart_metrics()
 
@@ -208,6 +212,9 @@ class PytorchModel(Model):
         self.loss.clear()
         for metric in self.metrics:
             metric.clear()
+
+    def load(self, path: str):
+        self.model.load_state_dict(torch.load(path))
 
     @staticmethod
     def _log_state(start, end, size, step, loss, metrics, mode='train', prefix="training"):

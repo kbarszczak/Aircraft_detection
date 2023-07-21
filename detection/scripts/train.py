@@ -24,6 +24,7 @@ def get_parser():
     parser.add_argument("-e", "--epochs", required=False, type=int, default=10, help="The epochs count")
     parser.add_argument("-iw", "--width", required=False, type=int, default=160, help="The input image width")
     parser.add_argument("-ih", "--height", required=False, type=int, default=160, help="The input image height")
+    parser.add_argument("-pp", "--pretrained_path", required=False, type=str, default="", help="The path to the pretrained model that will be used in the training")
 
     return parser.parse_args()
 
@@ -71,6 +72,14 @@ def run(parser):
     if not os.path.exists(target_path):
         os.mkdir(target_path)
 
+    # log training details
+    print("Training details:")
+    print(f'Loading data from: "{parser.data}"')
+    print(f'Saving files to: "{target_path}"')
+    print(f'Epochs: {parser.epochs}')
+    print(f'Batch size: {parser.batch_size}')
+    print(f'Device: {parser.device}')
+
     # get provider and instantiate objects needed for training
     provider = p.YoloProvider()
     model = provider.get_model(
@@ -86,6 +95,11 @@ def run(parser):
         batch_size=parser.batch_size,
         input_shape=(parser.height, parser.width, 3)
     )
+
+    # load pretrained model if needed
+    if parser.pretrained_path:
+        model.load(parser.pretrained_path)
+        print(f'Loaded pretrained model from: {parser.pretrained_path}')
 
     # launch training
     model.fit(train_data, valid_data, parser.epochs)
