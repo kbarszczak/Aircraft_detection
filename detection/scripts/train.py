@@ -5,10 +5,10 @@ import os
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description='Training FBNet model')
+    parser = argparse.ArgumentParser(description='Training model')
     parser.add_argument("-ver", "--version", required=True, type=str, help="The version of YOLO used")
     parser.add_argument("-t", "--target", required=False, type=str, default=".\\training",
-                        help="The path where data is stored during the training (such as history etc.)")
+                        help="The path where data are stored during the training (such as history etc.)")
     parser.add_argument("-d", "--data", required=False, type=str,
                         default="D:\\Data\\Aircraft_Detection",
                         help="The source path of the dataset")

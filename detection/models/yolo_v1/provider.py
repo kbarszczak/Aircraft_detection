@@ -64,7 +64,7 @@ class YoloProvider(provider.Provider):
 
         return pytorch_model
 
-    def get_data(self, data_path: str, train_file: str, test_file: str, valid_file: str, batch_size: int,
+    def get_data(self, data_path: str, train_file: str, test_file: str | None, valid_file: str | None, batch_size: int,
                  input_shape: tuple) -> (object, object, object):
         train = torch.utils.data.DataLoader(
             dataset=dataset.YoloDataset(
@@ -94,7 +94,7 @@ class YoloProvider(provider.Provider):
             drop_last=True,
             prefetch_factor=10,
             num_workers=2
-        )
+        ) if test_file is not None else None
 
         valid = torch.utils.data.DataLoader(
             dataset=dataset.YoloDataset(
@@ -109,6 +109,6 @@ class YoloProvider(provider.Provider):
             drop_last=True,
             prefetch_factor=10,
             num_workers=2
-        )
+        ) if valid_file is not None else None
 
         return train, test, valid
